@@ -27,11 +27,16 @@
 <h3>
 <a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span class="octicon octicon-link"></span></a>Visualizing World Bank World Develompent Indicator Data using R and R-Studio</h3>
 
-<p>In this first example we will use R and R to download and visualize data from the World Bank's World Development Indicator Database. To fully automate this process we will access the World Bank's API using the <a href="https://github.com/vincentarelbundock/WDI">WDI package</a> by Vincent Arel-Bundock. </p>
+<p>In this first example we will use R and R to download and visualize data from the World Bank's World Development Indicator Database. To fully automate this process we will access the World Bank's API using the <a href="https://github.com/vincentarelbundock/WDI">WDI package</a> by Vincent Arel-Bundock.</p>
 
 <p><img src="https://cloud.githubusercontent.com/assets/5873344/6999406/e60e4fcc-dbd7-11e4-8653-f6e1c5920329.png" alt = "Urbanization 1960-2011" style="max-width:100%"></p>
 
-<p>The code to reproduce the graphic above follows:</p>
+<p>To access the World Bank API through R we first install the WDI package as follows:</p>
+<pre><code>
+  install.packages("WDI")
+</code></pre>
+
+<p>Once the package is installed we create a string vector listing the libraries we will use to make our graphic.</p>
 
 <pre><code>
   # --- Clear the workspace
