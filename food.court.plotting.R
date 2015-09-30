@@ -1,13 +1,12 @@
 # Food court Data visualization and processing
 
 library(ggplot2)
-library(dplyr)
 library(stringr)
 library(RColorBrewer)
 library(lubridate)
 library(reshape2)
 library(colorspace)
-
+library(dplyr)
 
 # Lab RGB colors
 redL   <- c("#B71234")
@@ -22,8 +21,6 @@ fcd <- tbl_df(read.csv("food.court.dates.csv", stringsAsFactors = FALSE, strip.w
 
 # What is the structure of the data? Reads in as characters and intergers; Need to coerce to dates;
 fcd$Date <- mdy(fcd$Date)
-fcd$pDate <- mdy_hm(fcd$Timevalue)
-fcd <- select(fcd, -X)
 
 # Rename a few variables to avoid confusion
 fcd <- rename(fcd, dayOfMonth = Day, dayOfWeek = day)
@@ -50,35 +47,35 @@ table(fcd$tod, fcd$Time)
 # Average and Total visitors by day, month & time of day;
 # Have Laura show to how to convert to function
 fcd <- group_by(fcd, dayOfMonth) %>% 
-  mutate(domAve = sum(Visitors) / n(), domTotal = sum(Visitors)) %>% 
+  mutate(domAve = mean(Visitors), na.rm = TRUE, domTotal = sum(Visitors)) %>% 
   arrange(desc(domAve))
 
 fcd <-  group_by(fcd, dayOfWeek) %>%
-  mutate(dowAve = sum(Visitors) / n(), dowTotal = sum(Visitors)) %>%
+  mutate(dowAve = mean(Visitors), na.rm = TRUE, dowTotal = sum(Visitors)) %>%
   arrange(desc(dowTotal))
 
 fcd <-  group_by(fcd, Time) %>%
-  mutate(timeAve = sum(Visitors) / n(), timeTotal = sum(Visitors)) %>%
+  mutate(timeAve = mean(Visitors), na.rm = TRUE, timeTotal = sum(Visitors)) %>%
   arrange(desc(timeTotal))
 
 fcd <-  group_by(fcd, Month) %>%
-  mutate(monthAve = sum(Visitors) / n(), monthTotal = sum(Visitors)) %>%
+  mutate(monthAve = mean(Visitors), na.rm = TRUE, monthTotal = sum(Visitors)) %>%
   arrange(desc(monthTotal))
 
 fcd <- group_by(fcd, Date) %>%
-  mutate(dateAve = sum(Visitors) / n(), dateTotel = sum(Visitors))
+  mutate(dateAve = mean(Visitors), na.rm = TRUE, dateTotel = sum(Visitors))
 
 
 # What time of the day should I avoid the food court?
 fcdTime <- group_by(fcd, Time) %>% 
   summarise(aveVisit = mean(Visitors), sdVisit = sd(Visitors), maxVisit = max(Visitors), 
             minVisit = min(Visitors), nVisits = n(), totVisit = sum(Visitors)) %>% 
-  arrange(desc(Time, freqVisits))
+  arrange(desc(totVisit, Time))
 
 
 # What day of the month has the highest average of visitors?
 fcd %>% group_by(dayOfMonth) %>% 
-  summarise(aveVisit = mean(Visitors), sdVisit = sd(Visitors), maxVisit = max(Visitors), 
+  summarise(aveVisit = mean(Visitors), na.rm = TRUE, sdVisit = sd(Visitors), maxVisit = max(Visitors), 
             minVisit = min(Visitors), nVisits = n(), totVisit = sum(Visitors)) %>% 
   arrange(desc(aveVisit, freqVisits))
 
@@ -102,17 +99,17 @@ heightDDheat = 3*2
 widthDDavg = 1.85
 
 
-
-
 tmp.m <- melt(tmp, id = c("Month", "dow"))
-theme_ops <-  theme_bw() + theme(legend.position = "bottom", 
+theme_ops <-  theme_minimal() + theme(legend.position = "right", 
                      legend.key = element_blank(), 
                      legend.text = element_text(size = 14),
                      panel.border = element_blank(),
                      panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(),
                      axis.line = element_blank(),
-                     axis.ticks = element_blank())
+                     axis.ticks = element_blank())#,
+                     #panel.background = element_rect(fill = "gray97"),
+                     #panel.border = element_blank())
                      
 
 
@@ -120,6 +117,8 @@ theme_ops <-  theme_bw() + theme(legend.position = "bottom",
 tmp.dt <- group_by(fcd, dow, tod) %>%
   summarise(aveVisit = mean(Visitors)) %>%arrange(tod)
 tmp.dtm <- melt(tmp.dt, id = c("dow", "tod"))
+
+tmp.dtm$dow <- factor(tmp.dtm$dow, levels = rev(levels(tmp.dtm$dow)))
 
 ggplot(tmp.dtm, aes(tod, dow)) + geom_tile(aes(fill = value), colour = "white") +
   scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), name = 'food court visitors') +
@@ -131,6 +130,8 @@ ggplot(tmp.dtm, aes(tod, dow)) + geom_tile(aes(fill = value), colour = "white") 
 tmp.mt <- group_by(fcd, Month, tod) %>%
   summarise(aveVisit = mean(Visitors)) %>%arrange(tod)
 tmp.mtm <- melt(tmp.mt, id = c("Month", "tod"))
+
+tmp.mtm$Month <- factor(tmp.mtm$Month, levels = rev(levels(tmp.mtm$Month)))
 
 ggplot(tmp.mtm, aes(tod, Month)) + geom_tile(aes(fill = value), colour = "white") +
   scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), name = 'food court visitors') +
@@ -146,9 +147,8 @@ tmp.mdm <- melt(tmp.md, id = c("Month", "dow"))
 tmp.mdm$dow <-  factor(tmp.mdm$dow, levels = rev(levels(tmp.mdm$dow)))
 ggplot(tmp.mdm, aes(x = Month, y = dow)) + geom_tile(aes(fill = value), colour = "white") +
   scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), name = 'food court visitors') +
-  labs(x = "", y="") +
-  geom_text(aes(y = dow, x = Month, label = round(value, 0)), size = 4) +
-  theme_ops
+  labs(x = "", y="", title = "Food Court Voucher Sales (average / day)") +
+  geom_text(aes(y = dow, x = Month, label = round(value, 0)), size = 4) + theme_ops
 
 
 # Summarise by day of month and time (may get thin!)
@@ -158,9 +158,10 @@ tmp.domtodm <- melt(tmp.domtod, id = c("dayOfMonth", "tod"))
 
 ggplot(tmp.domtodm, aes(x = tod, y = dayOfMonth)) + geom_tile(aes(fill = value), colour = "white") +
   scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), name = 'food court visitors') +
-  labs(x = "", y="") + scale_y_reverse(breaks = 31:1) +
+  labs(x = "", y="Day of Month") + scale_y_reverse(breaks = 31:1) +
   geom_text(aes(y = dayOfMonth, x = tod, label = round(value, 0)), size = 4) +
   theme_ops
+
 
 
 # Run pal to choose your own color palette
