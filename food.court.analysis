@@ -1,0 +1,51 @@
+*Load food court data and create basic plots and analysis
+clear
+cd "C:/Users/t/Documents/GitHub/DataVizPractice"
+import delimited "food.court.dates.csv"
+
+* Rename, encode, and destring variables
+ren v10 dayName
+encode dayName, gen(dayofWeek)
+
+recode dayofWeek (1 = 6) (2 = 2) (3 = 7) (4 = 1) (5 = 5) (6 = 3) (7 = 4)
+la def day 1 "Sunday" 2 "Monday" 3 "Tuesday" 4 "Wednesday" 5 "Thursday" 6 "Friday" /*
+*/ 7 "Saturday"
+la val dayofWeek day
+tab dayofWeek dayName, mi 
+
+* Create a time variable to be converted
+g timevalue = string(month) + "-" + string(day) + "-" + string(year) + " " + time
+g double date_Stata = clock(timevalue, "MD20Yhm")
+format date_Stata %tc
+isid date_Stata
+
+clonevar date_Month = date_Stata
+format date_Month %tm
+* Create a full date variables
+
+* Time series set the data
+tsset date_Stata
+tsline visitors
+gen dow = dow(mdy(monthNum, day, year))
+
+
+* Calculate statistics for day of week, month, and day of month
+egen monthTotal = total(visitors), by(month year)
+egen monthAve = mean(visitors), by(month year)
+egen dayTotal = total(visitors), by(dayName month year)
+egen dayAve = mean(visitors), by(dayName month year)
+egen dayMonthTotal = total(visitors), by(day month year)
+egen dayMonthAve = mean(visitors), by(day month year)
+
+egen dailyTotal = total(visitors), by(day month year)
+egen dailyAve = mean(visitors) if year == 2014, by(day month)
+egen dailyAve2 = mean(visitors) if year == 2015, by(day month)
+
+tsline dailyAve
+tsline dayMonthTotal
+tsline dayMonthAve
+reg visitors i.month i.year i.dayofWeek, robust
+
+table monthNum year, c(mean visitors sum visitors) f(%9.0fc)
+
+table dayName  monthNum if year == 2014, c(mean visitors)
