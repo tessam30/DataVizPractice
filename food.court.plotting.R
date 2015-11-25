@@ -19,11 +19,14 @@ lgrayL <- c("#CECFCB")
 setwd("~/GitHub/DataVizPractice")
 fcd <- tbl_df(read.csv("food.court.dates.csv", stringsAsFactors = FALSE, strip.white=TRUE))
 
-# What is the structure of the data? Reads in as characters and intergers; Need to coerce to dates;
+# What is the structure of the data? Reads in as characters and intergers; Need to coerce to dates and factors
 fcd$Date <- mdy(fcd$Date)
+str(fcd$MonthName)
+fcd$MonthName <- as.factor(fcd$MonthName)
+fcd$Time <- as.factor(fcd$Time)
 
 # Rename a few variables to avoid confusion
-fcd <- rename(fcd, dayOfMonth = Day, dayOfWeek = day)
+fcd <- rename(fcd, dayOfMonth = Day, dayOfWeek = day, mo = Month, Month = MonthName )
 
 # Set months as factors to make ordering easy; Same for days
 fcd$Month = factor(fcd$Month,levels=c("January","February","March",
